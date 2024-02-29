@@ -1,0 +1,14 @@
+[
+  {
+    "floor": 1,
+    "image": "/plans/floor1.jpg"
+  },
+  {
+    "floor": 2,
+    "image": "/plans/floor2.jpg"
+  },
+  {
+    "floor": 3,
+    "image": "/plans/floor3.jpg"
+  }
+]
