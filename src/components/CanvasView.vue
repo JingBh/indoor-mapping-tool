@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { onKeyStroke, useMouseInElement, useRafFn, useResizeObserver } from '@vueuse/core'
+import { useMouseInElement, useRafFn, useResizeObserver } from '@vueuse/core'
 
 const props = defineProps({
   config: Object,
@@ -45,7 +45,6 @@ const imageScale = ref(1)
 const imageOffsetX = ref(0)
 const imageOffsetY = ref(0)
 const floorImageEle = computed(() => {
-  return null // TODO: DEV
   if (!ele.value) {
     return null
   }
@@ -138,7 +137,12 @@ const redraw = () => {
     ctx.value.save()
     ctx.value.beginPath()
     // outer shape clockwise
-    ctx.value.rect(0, 0, width, height)
+    ctx.value.rect(
+      imageOffsetX.value,
+      imageOffsetY.value,
+      width - imageOffsetX.value * 2,
+      height - imageOffsetY.value * 2
+    )
     // inner shape anti-clockwise
     ctx.value.moveTo(x1 * dpr, y1 * dpr)
     ctx.value.lineTo(x1 * dpr, y2 * dpr)
@@ -273,7 +277,7 @@ watch(() => props.creatingType, (newType) => {
 const onClick = () => {
   let atPoint = ''
   for (const [uuid, point] of (Object.entries(props.config.points) ?? [])) {
-    if (point.floor !== props.floor || props.selected === uuid) {
+    if (point.floor !== props.floor) {
       continue
     }
     const [x, y] = coordinatesImageToMouse([point.x, point.y])
@@ -293,7 +297,7 @@ const onClick = () => {
     if (props.creatingType && atPoint) {
       break
     }
-    if (line.floor !== props.floor || props.selected === uuid) {
+    if (line.floor !== props.floor) {
       continue
     }
     const p1 = props.config.points[line.p1]
@@ -341,13 +345,6 @@ const onClick = () => {
   }
   emit('select', '')
 }
-
-onKeyStroke(['Backspace', 'Delete'], () => {
-  if (!props.selected) {
-    return
-  }
-  emit('delete', props.selected)
-})
 </script>
 
 <template>

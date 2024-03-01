@@ -4,6 +4,8 @@ import { useLocalStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 
 import CanvasView from './components/CanvasView.vue'
+import ElementEdit from './components/ElementEdit.vue'
+import ElementList from './components/ElementList.vue'
 import FloorSelect from './components/FloorSelect.vue'
 
 import BiExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg?component'
@@ -217,18 +219,42 @@ const onCreate = ({ type, points }) => {
 
 const selected = ref('')
 const selectedElementType = computed(() => {
-  if (config.value.points[selected.value]) {
+  if (selected.value === 'reference') {
+    return 'reference'
+  } else if (config.value.points[selected.value]) {
     return 'point'
   } else if (config.value.lines[selected.value]) {
     return 'line'
   } else if (config.value.spaces[selected.value]) {
     return 'space'
+  } else {
+    return ''
   }
-  return ''
 })
 const selectedElement = computed(() => {
+  if (selectedElementType.value === 'reference' && config.value.references[floor.value]) {
+    return Object.assign({}, config.value.references[floor.value], {
+      type: 'reference'
+    })
+  }
   if (selectedElementType.value) {
-    return config.value[selectedElementType.value + 's'][selected.value]
+    const ele = config.value[selectedElementType.value + 's'][selected.value]
+    if (selectedElementType.value === 'line') {
+      return Object.assign({}, ele, {
+        type: 'line',
+        x1: config.value.points[ele.p1].x,
+        y1: config.value.points[ele.p1].y,
+        x2: config.value.points[ele.p2].x,
+        y2: config.value.points[ele.p2].y,
+        lat1: config.value.points[ele.p1].lat,
+        long1: config.value.points[ele.p1].long,
+        lat2: config.value.points[ele.p2].lat,
+        long2: config.value.points[ele.p2].long
+      })
+    }
+    return Object.assign({}, ele, {
+      type: selectedElementType.value
+    })
   }
   return null
 })
@@ -236,7 +262,8 @@ const onSelect = (uuid) => {
   selected.value = uuid
 }
 
-const onDelete = (uuid) => {
+const onDelete = () => {
+  const uuid = selected.value
   const deleted = [uuid]
   if (config.value.points[uuid]) {
     for (const [lineUuid, line] of Object.entries(config.value.lines)) {
@@ -274,7 +301,6 @@ const onDelete = (uuid) => {
         :floor-image="getFloorImage(floor)"
         :selected="selected"
         @create="onCreate"
-        @delete="onDelete"
         @select="onSelect"
       />
     </el-main>
@@ -312,44 +338,29 @@ const onDelete = (uuid) => {
           </el-button>
         </div>
       </section>
+      <section class="bg-white border-b border-gray-200">
+        <label class="block pt-3 px-3 mb-2 text-xs text-gray-400 font-medium">
+          Element List
+        </label>
+        <element-list
+          :config="config"
+          :floor="floor"
+          :selected="selected"
+          @select="onSelect"
+        />
+      </section>
       <section class="bg-white p-3 border-b border-gray-200">
         <label class="block mb-2 text-xs text-gray-400 font-medium">
           Element Configuration
         </label>
-        <el-form
+        <element-edit
           v-if="selectedElement"
-          label-position="left"
-          label-width="4rem"
-        >
-          <el-form-item label="Type">
-            <el-input
-              v-model="selectedElementType"
-              size="small"
-              disabled
-              readonly
-            />
-          </el-form-item>
-          <el-form-item label="ID">
-            <el-input
-              v-model="selectedElement.id"
-              size="small"
-              disabled
-              readonly
-            />
-          </el-form-item>
-        </el-form>
+          :value="selectedElement"
+          @delete="onDelete"
+        />
         <p v-else class="inline-flex justify-center items-center gap-1 text-sm text-gray-500">
           <bi-exclamation-triangle class="w-3 h-3" />
           <span>Select an element first</span>
-        </p>
-      </section>
-      <section class="bg-white p-3 border-b border-gray-200">
-        <label class="block mb-2 text-xs text-gray-400 font-medium">
-          Element List
-        </label>
-        <p class="inline-flex justify-center items-center gap-1 text-sm text-gray-500">
-          <bi-exclamation-triangle class="w-3 h-3" />
-          <span>Not implemented</span>
         </p>
       </section>
       <section class="bg-white p-3 border-b border-gray-200">
